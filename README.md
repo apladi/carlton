@@ -1,3 +1,4 @@
+![carlton](http://github.com/apladi/carlton/carlton.png)
 # carlton  
 The successor to LadiBE, the worst web server ever.  
 Carlton is a basic web server that only supports `HTTP 1.1`.  

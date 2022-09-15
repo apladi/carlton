@@ -1,5 +1,6 @@
 # carlton  
-The successor to LadiBe, the worst web server ever.  
+The successor to LadiBE, the worst web server ever.  
+Carlton is a basic web server that only supports `HTTP 1.1`.  
 # features  
 - [x] Supports html files and text  
 - [ ] Supports images  
@@ -7,5 +8,5 @@ The successor to LadiBe, the worst web server ever.
 - [ ] Multithreaded (soon)  
 # compiling  
 Use the `compile` file provided or use clang or gcc to compile it.  
-`gcc main.c -o main`
-`clang main.c -o main`
+`gcc main.c -o main`  
+`clang main.c -o main`  

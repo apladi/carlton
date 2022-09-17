@@ -119,9 +119,9 @@ int main(void) {
 
     printf("[%s] Socket created.\n", server_name);
 
-    svradr.sin_family      = AF_INET;
-    svradr.sin_addr.s_addr = INADDR_ANY;
-    svradr.sin_port        = htons(1111);
+    svradr.sin_family      = AF_INET;     // Vin Diesel
+    svradr.sin_addr.s_addr = INADDR_ANY;  // Address (None really)
+    svradr.sin_port        = htons(1111); // Port
 
     if (bind(sock, (struct sockaddr*)&svradr, sizeof(svradr)) == -1) { // Binding
         printf("[%s] Could not bind.\n", server_name);

@@ -161,6 +161,13 @@ int main(void) {
         recv(cxn, received, 8192, 0);
 
         token = strtok(received, "GET ");
+
+        if (token == NULL) {
+            close(cxn);
+            free(received);
+            continue;
+        }
+
         printf("[%s] CXN: %s\n", server_name, inet_ntoa(svradr.sin_addr));
 
         // This part here is where you configurate which request leads to what file

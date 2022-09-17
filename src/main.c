@@ -108,16 +108,13 @@ int main(void) {
         printf("[Carlton] CXN: %s\n", inet_ntoa(svradr.sin_addr));
 
         if (strcmp(token, "/") == 0) {
-            sendf(cxn, "pages/topbar.html", "text/html");
-            sendf(cxn, "pages/index.html", NULL);
+            sendf(cxn, "pages/index.html", "text/html");
         } else if (strcmp(token, "/example") == 0) {
-            sendf(cxn, "pages/topbar.html", "text/html");
-            sendf(cxn, "pages/example.html", NULL);
+            sendf(cxn, "pages/example.html", "text/html");
         } else if (strcmp(token, "/favicon.ico") == 0) {
             sendf(cxn, "icons/icon5.png", "image/png");
         } else {
-            sendf(cxn, "pages/topbar.html", "text/html");
-            sendf(cxn, "pages/404.html", NULL);
+            sendf(cxn, "pages/404.html", "text/html");
         }
         
         close(cxn);

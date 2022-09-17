@@ -7,8 +7,10 @@
 #define newline "\n"
 #define begin "\n\n"
 
-char server_name[100];
-char version[100];
+struct {
+    char server_name[100];
+    char version[100];
+} app;
 
 struct {
     char c200[100]; // 200 OK
@@ -42,18 +44,18 @@ int sendf(int sock, char filename[], char type[], int code) { // Send file
     file = fopen(filename, "rb"); // Open the file
 
     if (file == NULL) { // If file could not be opened
-        strcpy(sendstr, version);          // Setting HTTP version
+        strcpy(sendstr, app.version);      // Setting HTTP version
         strcat(sendstr, codes.c500);       // Setting the status code (200, 404, 500 etc)
         strcat(sendstr, newline);          // Add newline for next bit of data
         strcat(sendstr, "Content-Type: "); // Content-Type:
         strcat(sendstr, type);             // The type provided
         strcat(sendstr, newline);          // Add newline for next bit of data
         strcat(sendstr, "Server: ");       // Server: 
-        strcat(sendstr, server_name);      // The server's name
+        strcat(sendstr, app.server_name);  // The server's name
         strcat(sendstr, begin);            // Newlines (2 of them) to start sending the rest of the data
         strcat(sendstr, codes.c500);       // Sending error 500
         send(sock, sendstr, strlen(sendstr), 0);
-        printf("[%s] Could not open file \"%s\". Are you sure the file exists?\n", server_name, filename); // Guess what this does
+        printf("[%s] Could not open file \"%s\". Are you sure the file exists?\n", app.server_name, filename); // Guess what this does
         close(sock);
         free(sendstr);
         return 1;
@@ -67,14 +69,14 @@ int sendf(int sock, char filename[], char type[], int code) { // Send file
     fclose(file);                    // All done, close file
 
     if (type != NULL) { // If type does not have an input / is null (arg 3)
-        strcpy(sendstr, version);          // Setting HTTP version
+        strcpy(sendstr, app.version);      // Setting HTTP version
         strcat(sendstr, strcode(code));    // Setting the status code
         strcat(sendstr, newline);          // Add newline for next bit of data
         strcat(sendstr, "Content-Type: "); // Content-Type: 
         strcat(sendstr, type);             // The type provided
         strcat(sendstr, newline);          // Add newline for next bit of data
         strcat(sendstr, "Server: ");       // Server: 
-        strcat(sendstr, server_name);      // The server's name
+        strcat(sendstr, app.server_name);  // The server's name
         strcat(sendstr, begin);            // Newlines (2 of them) to start sending the rest of the data
     }
 
@@ -91,14 +93,14 @@ int sendt(int sock, char input[], char type[], int code) { // Send text
     if (type == NULL) { // If type does not have an input / is null (arg 3)
         strcpy(sendstr, input);
     } else {
-        strcpy(sendstr, version);          // Setting HTTP version
+        strcpy(sendstr, app.version);      // Setting HTTP version
         strcat(sendstr, strcode(code));    // Setting the status code
         strcat(sendstr, newline);          // Add newline for next bit of data
         strcat(sendstr, "Content-Type: "); // Content-Type: 
         strcat(sendstr, type);             // The type provided
         strcat(sendstr, newline);          // Add newline for next bit of data
         strcat(sendstr, "Server: ");       // Server: 
-        strcat(sendstr, server_name);      // The server's name
+        strcat(sendstr, app.server_name);  // The server's name
         strcat(sendstr, begin);            // Newlines (2 of them) to start sending the rest of the data
         strcat(sendstr, input);            // Data
     }
@@ -119,41 +121,41 @@ int main(void) {
     int sock;
     int cxn;
 
-    strcpy(version,     "HTTP/1.1 "); // Setting version
-    strcpy(server_name, "Carlton");   // Setting server name
+    strcpy(app.version,     "HTTP/1.1 "); // Setting version
+    strcpy(app.server_name, "Carlton");   // Setting server name
 
     strcpy(codes.c200, "200 OK");                    // 200 OK
     strcpy(codes.c404, "404 Not Found");             // 404 Not Found
     strcpy(codes.c500, "500 Internal Server Error"); // 500 Internal Server Error
 
 
-    printf("[%s] Starting...\n", server_name);
+    printf("[%s] Starting...\n", app.server_name);
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
 
     if (sock == -1) { // If the socket could not create (obv)
-        printf("[%s] Could not create the socket.\n", server_name);
+        printf("[%s] Could not create the socket.\n", app.server_name);
     }
 
-    printf("[%s] Socket created.\n", server_name);
+    printf("[%s] Socket created.\n", app.server_name);
 
     svradr.sin_family      = AF_INET;     // Vin Diesel
     svradr.sin_addr.s_addr = INADDR_ANY;  // Address (None really)
     svradr.sin_port        = htons(1111); // Port
 
     if (bind(sock, (struct sockaddr*)&svradr, sizeof(svradr)) == -1) { // Binding
-        printf("[%s] Could not bind.\n", server_name);
+        printf("[%s] Could not bind.\n", app.server_name);
         return 1;
     }
 
-    printf("[%s] Binded.\n", server_name);
+    printf("[%s] Binded.\n", app.server_name);
     
     if (listen(sock, 5) == -1) { // Listen
-        printf("[%s] Could not listen (on the socket).\n", server_name);
+        printf("[%s] Could not listen (on the socket).\n", app.server_name);
         return 1;
     }
     
-    printf("[%s] Binded and listening.\n", server_name);
+    printf("[%s] Binded and listening.\n", app.server_name);
 
     while (sock) { // While the socket sock exists
         cxn = accept(sock, (struct sockaddr*)&svradr, &size);
@@ -168,7 +170,7 @@ int main(void) {
             continue;
         }
 
-        printf("[%s] CXN: %s\n", server_name, inet_ntoa(svradr.sin_addr));
+        printf("[%s] CXN: %s\n", app.server_name, inet_ntoa(svradr.sin_addr));
 
         // This part here is where you configurate which request leads to what file
         if (strcmp(token, "/") == 0) {

@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#define MAXSIZE 2000
 
 int sendf(int sock, char filename[], char type[]) { // Send file
     FILE *file;

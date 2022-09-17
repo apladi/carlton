@@ -113,11 +113,10 @@ int sendt(int sock, char input[], char type[], int code) { // Send text
 
 int main(void) {
     socklen_t size;
-    time_t current;
     struct sockaddr_in svradr;
     char *received;
-    char *token;
-    int count;
+    char token[100];
+    int loop;
     int sock;
     int cxn;
 
@@ -158,16 +157,25 @@ int main(void) {
     printf("[%s] Binded and listening.\n", app.server_name);
 
     while (sock) { // While the socket sock exists
+        memset(token, 0, 100);
+
         cxn = accept(sock, (struct sockaddr*)&svradr, &size);
         received = malloc(8129);
         recv(cxn, received, 8192, 0);
 
-        token = strtok(received, "GET ");
+        if (strncmp(received, "GET ", 4) == 0) { // If it is a GET request
+            loop = 0;
+            for (int i = 4; i < strlen(received); ++i) { // Reading page requested
+                if (received[i] == ' ') {
+                    break;
+                }
 
-        if (token == NULL) {
+                token[loop] = received[i];
+                ++loop;
+            }
+        } else {
+            sendt(cxn, "Unsupported request.", "text/plain", 500); // Send 500
             close(cxn);
-            free(received);
-            continue;
         }
 
         printf("[%s] CXN: %s\n", app.server_name, inet_ntoa(svradr.sin_addr));

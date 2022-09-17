@@ -178,7 +178,7 @@ int main(void) {
         } else if (strcmp(token, "/example") == 0) {
             sendf(cxn, "pages/example.html", "text/html", 200);
         } else if (strcmp(token, "/favicon.ico") == 0) {
-            sendf(cxn, "icons/icon5.png", "image/png", 200);
+            sendf(cxn, "icons/favicon.ico", "image/x-icon", 200);
         } else {
             sendf(cxn, "pages/404.html", "text/html", 404);
         }

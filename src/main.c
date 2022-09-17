@@ -16,7 +16,24 @@ struct {
     char c500[100]; // 500 Internal Server Error
 } codes;
 
-int sendf(int sock, char filename[], char type[]) { // Send file
+const char *strcode(int code) {
+    switch (code) {
+        case 200:
+            return codes.c200;
+            break;
+        case 404:
+            return codes.c404;
+            break;
+        case 500:
+            return codes.c500;
+            break;
+        default:
+            return codes.c200; // Defaultly return code 200
+            break;
+    }
+}
+
+int sendf(int sock, char filename[], char type[], int code) { // Send file
     FILE *file;
     size_t length;
     char *sendstr = malloc(1000);
@@ -26,7 +43,7 @@ int sendf(int sock, char filename[], char type[]) { // Send file
 
     if (file == NULL) { // If file could not be opened
         strcpy(sendstr, version);          // Setting HTTP version
-        strcat(sendstr, codes.c500);       // Setting the code (200, 404, 500 etc)
+        strcat(sendstr, codes.c500);       // Setting the status code (200, 404, 500 etc)
         strcat(sendstr, newline);          // Add newline for next bit of data
         strcat(sendstr, "Content-Type: "); // Content-Type:
         strcat(sendstr, type);             // The type provided
@@ -45,14 +62,13 @@ int sendf(int sock, char filename[], char type[]) { // Send file
     fseek(file, 0, SEEK_END);        // Go to the end of file
     length  = ftell(file);           // Get length
     content = malloc(length);        // Malloc content with length bytes
-    sendstr = malloc(1000);          // Malloc sendstr to 1k because http request main body
     rewind(file);                    // Go to the start of file
     fread(content, length, 1, file); // Read the bloody thing
     fclose(file);                    // All done, close file
 
     if (type != NULL) { // If type does not have an input / is null (arg 3)
         strcpy(sendstr, version);          // Setting HTTP version
-        strcat(sendstr, codes.c200);       // Setting the code (200, 404, 500 etc)
+        strcat(sendstr, strcode(code));    // Setting the status code
         strcat(sendstr, newline);          // Add newline for next bit of data
         strcat(sendstr, "Content-Type: "); // Content-Type: 
         strcat(sendstr, type);             // The type provided
@@ -60,34 +76,36 @@ int sendf(int sock, char filename[], char type[]) { // Send file
         strcat(sendstr, "Server: ");       // Server: 
         strcat(sendstr, server_name);      // The server's name
         strcat(sendstr, begin);            // Newlines (2 of them) to start sending the rest of the data
-        send(sock, sendstr, strlen(sendstr), 0);
     }
 
+    send(sock, sendstr, strlen(sendstr), 0);
     send(sock, content, length, 0);
     free(sendstr);
     free(content);
     return 0;
 }
 
-int sendt(int sock, char input[], char type[]) { // Send text
-    char *final;
-
-    final = malloc(strlen(input) + 1000); // Malloc final request to be 1k bytes, plus input length
+int sendt(int sock, char input[], char type[], int code) { // Send text
+    char *sendstr = malloc(strlen(input) + 1000); // Malloc final request to be 1k bytes, plus input length
 
     if (type == NULL) { // If type does not have an input / is null (arg 3)
-        strcpy(final, input);
+        strcpy(sendstr, input);
     } else {
-        strcpy(final, "HTTP/1.1 200 OK\nServer: %s\nContent-Type: "); // Start creating request
-        strcat(final, type);
-        strcat(final, "\n\n");
-        strcat(final, input);
+        strcpy(sendstr, version);          // Setting HTTP version
+        strcat(sendstr, strcode(code));    // Setting the status code
+        strcat(sendstr, newline);          // Add newline for next bit of data
+        strcat(sendstr, "Content-Type: "); // Content-Type: 
+        strcat(sendstr, type);             // The type provided
+        strcat(sendstr, newline);          // Add newline for next bit of data
+        strcat(sendstr, "Server: ");       // Server: 
+        strcat(sendstr, server_name);      // The server's name
+        strcat(sendstr, begin);            // Newlines (2 of them) to start sending the rest of the data
+        strcat(sendstr, input);            // Data
     }
 
-    if (send(sock, final, strlen(final), 0) == -1) {
-        printf("[%s] Could not send text to client.\n", server_name);
-        return 1;
-    }
-    
+    send(sock, sendstr, strlen(sendstr), 0);
+
+    free(sendstr);    
     return 0;
 }
 
@@ -95,7 +113,7 @@ int main(void) {
     socklen_t size;
     time_t current;
     struct sockaddr_in svradr;
-    char *received = malloc(8192);
+    char *received;
     char *token;
     int count;
     int sock;
@@ -139,6 +157,7 @@ int main(void) {
 
     while (sock) { // While the socket sock exists
         cxn = accept(sock, (struct sockaddr*)&svradr, &size);
+        received = malloc(8129);
         recv(cxn, received, 8192, 0);
 
         token = strtok(received, "GET ");
@@ -146,15 +165,16 @@ int main(void) {
 
         // This part here is where you configurate which request leads to what file
         if (strcmp(token, "/") == 0) {
-            sendf(cxn, "pages/index.html", "text/html");
+            sendf(cxn, "pages/index.html", "text/html", 200);
         } else if (strcmp(token, "/example") == 0) {
-            sendf(cxn, "pages/example.html", "text/html");
+            sendf(cxn, "pages/example.html", "text/html", 200);
         } else if (strcmp(token, "/favicon.ico") == 0) {
-            sendf(cxn, "icons/icon5.png", "image/png");
+            sendf(cxn, "icons/icon5.png", "image/png", 200);
         } else {
-            sendf(cxn, "pages/404.html", "text/html");
+            sendf(cxn, "pages/404.html", "text/html", 404);
         }
         
         close(cxn);
+        free(received);
     }
 }

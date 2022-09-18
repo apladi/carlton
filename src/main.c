@@ -157,6 +157,7 @@ void *s_cxn(void *arg) { // Multithread function
 
     close(app.cxn);
     free(received);
+    return 0;
 }
  
 int main(void) {

@@ -10,3 +10,5 @@ Carlton is a basic web server that only supports `HTTP 1.1`.
 # compiling  
 Use the `Makefile` provided.
 Run `make` in the root of the clone you have created.
+# running
+The default port is 1111. It is changable in the structure `app`. (uint16_t port).   

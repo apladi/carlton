@@ -1,1 +1,1 @@
-clang src/*.c -o bin/main
+clang src/*.c -o bin/main -lpthread

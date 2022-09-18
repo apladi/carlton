@@ -2,14 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #define newline "\n"
 #define begin "\n\n"
 
+struct sockaddr_in svradr;
+
 struct {
     char server_name[100];
     char version[100];
+    int sock;
+    int cxn;
 } app;
 
 struct {
@@ -111,14 +116,52 @@ int sendt(int sock, char input[], char type[], int code) { // Send text
     return 0;
 }
 
-int main(void) {
-    socklen_t size;
-    struct sockaddr_in svradr;
+void *s_cxn(void *arg) {
     char *received;
     char token[100];
     int loop;
-    int sock;
-    int cxn;
+    int sock = app.cxn;
+
+    memset(token, 0, 100);
+
+    received = malloc(8129);
+    recv(app.cxn, received, 8192, 0);
+
+    if (strncmp(received, "GET ", 4) == 0) { // If it is a GET request
+        loop = 0;
+        for (int i = 4; i < strlen(received); ++i) { // Reading page requested
+            if (received[i] == ' ') {
+                break;
+            }
+
+            token[loop] = received[i];
+            ++loop;
+        }
+    } else {
+        sendt(app.cxn, "Unsupported request.", "text/plain", 500); // Send 500
+        close(app.cxn);
+    }
+
+    printf("[%s] CXN: %s\n", app.server_name, inet_ntoa(svradr.sin_addr));
+
+    // This part here is where you configurate which request leads to what file
+    if (strcmp(token, "/") == 0) {
+        sendf(app.cxn, "pages/index.html", "text/html", 200);
+    } else if (strcmp(token, "/example") == 0) {
+        sendf(app.cxn, "pages/example.html", "text/html", 200);
+    } else if (strcmp(token, "/favicon.ico") == 0) {
+        sendf(app.cxn, "icons/favicon.ico", "image/x-icon", 200);
+    } else {
+        sendf(app.cxn, "pages/404.html", "text/html", 404);
+    }
+
+    close(app.cxn);
+    free(received);
+}
+ 
+int main(void) {
+    pthread_t thread;
+    socklen_t size;
 
     strcpy(app.version,     "HTTP/1.1 "); // Setting version
     strcpy(app.server_name, "Carlton");   // Setting server name
@@ -130,9 +173,9 @@ int main(void) {
 
     printf("[%s] Starting...\n", app.server_name);
 
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+    app.sock = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (sock == -1) { // If the socket could not create (obv)
+    if (app.sock == -1) { // If the socket could not create (obv)
         printf("[%s] Could not create the socket.\n", app.server_name);
     }
 
@@ -142,56 +185,27 @@ int main(void) {
     svradr.sin_addr.s_addr = INADDR_ANY;  // Address (None really)
     svradr.sin_port        = htons(1111); // Port
 
-    if (bind(sock, (struct sockaddr*)&svradr, sizeof(svradr)) == -1) { // Binding
+    if (bind(app.sock, (struct sockaddr*)&svradr, sizeof(svradr)) == -1) { // Binding
         printf("[%s] Could not bind.\n", app.server_name);
         return 1;
     }
 
     printf("[%s] Binded.\n", app.server_name);
     
-    if (listen(sock, 5) == -1) { // Listen
+    if (listen(app.sock, 5) == -1) { // Listen
         printf("[%s] Could not listen (on the socket).\n", app.server_name);
         return 1;
     }
     
     printf("[%s] Binded and listening.\n", app.server_name);
 
-    while (sock) { // While the socket sock exists
-        memset(token, 0, 100);
-
-        cxn = accept(sock, (struct sockaddr*)&svradr, &size);
-        received = malloc(8129);
-        recv(cxn, received, 8192, 0);
-
-        if (strncmp(received, "GET ", 4) == 0) { // If it is a GET request
-            loop = 0;
-            for (int i = 4; i < strlen(received); ++i) { // Reading page requested
-                if (received[i] == ' ') {
-                    break;
-                }
-
-                token[loop] = received[i];
-                ++loop;
-            }
-        } else {
-            sendt(cxn, "Unsupported request.", "text/plain", 500); // Send 500
-            close(cxn);
+    while (app.sock) { // While the socket sock exists
+        if ((app.cxn = accept(app.sock, (struct sockaddr*)&svradr, &size)) == -1) {
+            printf("[%s] Could not accept the connection.\n", app.server_name);
+            close(app.cxn);
+            continue;
         }
 
-        printf("[%s] CXN: %s\n", app.server_name, inet_ntoa(svradr.sin_addr));
-
-        // This part here is where you configurate which request leads to what file
-        if (strcmp(token, "/") == 0) {
-            sendf(cxn, "pages/index.html", "text/html", 200);
-        } else if (strcmp(token, "/example") == 0) {
-            sendf(cxn, "pages/example.html", "text/html", 200);
-        } else if (strcmp(token, "/favicon.ico") == 0) {
-            sendf(cxn, "icons/favicon.ico", "image/x-icon", 200);
-        } else {
-            sendf(cxn, "pages/404.html", "text/html", 404);
-        }
-        
-        close(cxn);
-        free(received);
+        pthread_create(&thread, NULL, s_cxn, NULL);
     }
 }

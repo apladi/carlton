@@ -6,7 +6,7 @@ Carlton is a basic web server that only supports `HTTP 1.1`.
 - [x] Supports html files and text  
 - [x] Supports images  
 - [x] Supports videos (slightly broken)   
-- [ ] Multithreaded (soon)  
+- [x] Multithreaded  
 # compiling  
 Use the `compile` file provided or use clang or gcc to compile it.  
 `gcc main.c -o main`  

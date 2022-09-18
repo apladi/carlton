@@ -12,6 +12,7 @@
 struct sockaddr_in svradr;
 
 struct {
+    uint16_t port;
     char server_name[100];
     char version[100];
     int sock;
@@ -189,6 +190,7 @@ int main(void) {
     printf("[%s] Starting...\n", app.server_name);
 
     app.sock = socket(AF_INET, SOCK_STREAM, 0);
+    app.port = 1111;
 
     if (app.sock == -1) { // If the socket could not create (obv)
         printf("[%s] Could not create the socket.\n", app.server_name);
@@ -196,9 +198,9 @@ int main(void) {
 
     printf("[%s] Socket created.\n", app.server_name);
 
-    svradr.sin_family      = AF_INET;     // Vin Diesel
-    svradr.sin_addr.s_addr = INADDR_ANY;  // Address (None really)
-    svradr.sin_port        = htons(1111); // Port
+    svradr.sin_family      = AF_INET;         // Vin Diesel
+    svradr.sin_addr.s_addr = INADDR_ANY;      // Address (None really)
+    svradr.sin_port        = htons(app.port); // Port
 
     setsockopt(app.sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)); // Allows reuse of the socket so you do not have to wait for it to time out after exit.
 

@@ -8,6 +8,5 @@ Carlton is a basic web server that only supports `HTTP 1.1`.
 - [x] Supports videos (slightly broken)   
 - [x] Multithreaded  
 # compiling  
-Use the `compile` file provided or use clang or gcc to compile it.  
-`gcc main.c -o main`  
-`clang main.c -o main`  
+Use the `Makefile` provided.
+Run `make` in the root of the clone you have created.

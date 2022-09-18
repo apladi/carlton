@@ -23,7 +23,7 @@ struct {
     char c500[100]; // 500 Internal Server Error
 } codes;
 
-const char *strcode(int code) {
+const char *strcode(int code) { // Returns status codes as strings (from int)
     switch (code) {
         case 200:
             return codes.c200;
@@ -116,7 +116,7 @@ int sendt(int sock, char input[], char type[], int code) { // Send text
     return 0;
 }
 
-void *s_cxn(void *arg) {
+void *s_cxn(void *arg) { // Multithread function
     char *received;
     char token[100];
     int loop;

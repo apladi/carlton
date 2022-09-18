@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -125,7 +126,7 @@ void *s_cxn(void *arg) { // Multithread function
     memset(token, 0, 100);
 
     received = malloc(8129);
-    recv(app.cxn, received, 8192, 0);
+    recv(sock, received, 8192, 0);
 
     if (strncmp(received, "GET ", 4) == 0) { // If it is a GET request
         loop = 0;
@@ -138,31 +139,44 @@ void *s_cxn(void *arg) { // Multithread function
             ++loop;
         }
     } else {
-        sendt(app.cxn, "Unsupported request.", "text/plain", 500); // Send 500
-        close(app.cxn);
+        sendt(sock, "Unsupported request.", "text/plain", 500); // Send 500
+        close(sock);
     }
 
     printf("[%s] CXN: %s\n", app.server_name, inet_ntoa(svradr.sin_addr));
 
     // This part here is where you configurate which request leads to what file
     if (strcmp(token, "/") == 0) {
-        sendf(app.cxn, "pages/index.html", "text/html", 200);
+        sendf(sock, "pages/index.html", "text/html", 200);
     } else if (strcmp(token, "/example") == 0) {
-        sendf(app.cxn, "pages/example.html", "text/html", 200);
+        sendf(sock, "pages/example.html", "text/html", 200);
     } else if (strcmp(token, "/favicon.ico") == 0) {
-        sendf(app.cxn, "icons/favicon.ico", "image/x-icon", 200);
+        sendf(sock, "icons/favicon.ico", "image/x-icon", 200);
     } else {
-        sendf(app.cxn, "pages/404.html", "text/html", 404);
+        sendf(sock, "pages/404.html", "text/html", 404);
     }
 
-    close(app.cxn);
+    close(sock);
     free(received);
     return 0;
+}
+
+void ctrlc(int dummy) {
+    printf("\n[%s] Closing main sockets...\n", app.server_name);
+    close(app.sock);
+    close(app.cxn);
+    shutdown(app.sock, SHUT_RDWR);
+    shutdown(app.cxn,  SHUT_RDWR);
+    printf("[%s] Exiting...\n", app.server_name);
+    exit(0);
 }
  
 int main(void) {
     pthread_t thread;
     socklen_t size;
+    int optval = 1;
+
+    signal(SIGINT, ctrlc);
 
     strcpy(app.version,     "HTTP/1.1 "); // Setting version
     strcpy(app.server_name, "Carlton");   // Setting server name
@@ -185,6 +199,8 @@ int main(void) {
     svradr.sin_family      = AF_INET;     // Vin Diesel
     svradr.sin_addr.s_addr = INADDR_ANY;  // Address (None really)
     svradr.sin_port        = htons(1111); // Port
+
+    setsockopt(app.sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)); // Allows reuse of the socket so you do not have to wait for it to time out after exit.
 
     if (bind(app.sock, (struct sockaddr*)&svradr, sizeof(svradr)) == -1) { // Binding
         printf("[%s] Could not bind.\n", app.server_name);
